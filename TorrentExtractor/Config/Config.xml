@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Config>
+  <Extraction>
+    <Folders>
+      <!-- Folder folders where to extract files
+       . Category: Configured in qBitorrent to know what the downloaded file is
+       . Type: Just to let you know what it's for [not used in code for now]
+       . Subfolder: 1 - create subfolder / 0 - no subfolder
+       . Season: 1 - create subfolder for season / 0 - no subfolder
+      -->
+      <Folder Category="radarr" Type="Movies" Subfolder="0" Season="0">D:\Movies\</Folder>
+      <Folder Category="tv-sonarr" Type="TV Shows" Subfolder="1" Season="1">D:\TV Shows\</Folder>
+    </Folders>
+    <FileFormats>
+      <!-- FileFormat: What to do with the files depeding on the extension
+      . Action: Copy / Extract
+      -->
+      <FileFormat Action="Copy">.mkv</FileFormat>
+      <FileFormat Action="Copy">.mp4</FileFormat>
+      <FileFormat Action="Extract">.rar</FileFormat>
+    </FileFormats>
+  </Extraction>
+  <Logs>
+    <!-- LogToFile: 1 - create log / 0 - no log -->
+    <LogToFile>1</LogToFile>
+    <!-- Level: 0=Error / 1=Info / 2=Debug; -->
+    <Level>1</Level>
+    <!-- Log File -->
+    <File>C:\TorrentExtractor\Logs\Log.txt</File>
+  </Logs>
+</Config>
