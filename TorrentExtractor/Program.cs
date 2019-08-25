@@ -7,8 +7,15 @@ using Serilog;
 
 namespace TorrentExtractor
 {
+    /// <summary>
+    /// Main class
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Return config object from xml file .\Config\Configuration.xml
+        /// </summary>
+        /// <returns>Config object</returns>
         private static Config GetConfig()
         {
             XmlSerializer reader = new XmlSerializer(typeof(Config));
@@ -28,6 +35,10 @@ namespace TorrentExtractor
             throw new ArgumentException("Some random error when getting Config.xml file.");
         }
 
+        /// <summary>
+        /// Start logging file if define in the configuration object
+        /// </summary>
+        /// <param name="config">Configuration</param>
         private static void StartLogging(Config config)
         {
             try
@@ -43,6 +54,13 @@ namespace TorrentExtractor
             }
         }
 
+        /// <summary>
+        /// Returns the destination folder
+        /// </summary>
+        /// <param name="config">Configuration</param>
+        /// <param name="sourcePath">Source folder of your downloaded files</param>
+        /// <param name="categorie">Categorie sent by torrent client</param>
+        /// <returns>Destination path</returns>
         private static string GetDestinationPath(Config config, string sourcePath, string categorie)
         {
             Regex regexEpisode = new Regex(@"^S\d{2}(E\d{2})?$");
@@ -101,6 +119,10 @@ namespace TorrentExtractor
             return destination;
         }
 
+        /// <summary>
+        /// Main
+        /// </summary>
+        /// <param name="args">arrays of arguments sent to the application</param>
         static void Main(string[] args)
         {
             Config config = GetConfig();

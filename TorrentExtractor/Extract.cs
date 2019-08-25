@@ -9,8 +9,17 @@ using System.Threading;
 
 namespace TorrentExtractor
 {
+    /// <summary>
+    /// Functions for extracting files
+    /// </summary>
     class Extract
     {
+        /// <summary>
+        /// Extract the files found in a folder
+        /// </summary>
+        /// <param name="folder">Source folder</param>
+        /// <param name="destination">Destination folder</param>
+        /// <param name="config">Configuration</param>
         public static void FolderExtract(string folder, string destination, Config config)
         {
             if (config.Logs.Level > 1)
@@ -26,6 +35,14 @@ namespace TorrentExtractor
             }
         }
 
+        /// <summary>
+        /// Extract files received
+        /// </summary>
+        /// <param name="file">Current file name</param>
+        /// <param name="destination">Destination folder</param>
+        /// <param name="config">Configuration</param>
+        /// <param name="lastExtractedFile">name of the last extracted file</param>
+        /// <returns>The name of the last extracted file</returns>
         public static string FileExtract(string file, string destination, Config config, string lastExtractedFile)
         {
             if (config.Logs.Level > 1)
