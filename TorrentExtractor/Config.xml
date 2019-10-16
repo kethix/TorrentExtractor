@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!-- Custom settings for TorrentExtractor -->
+<Config>
+  <Folders>
+    <!-- Folder folders where to extract files
+       . Category: Configured in qBitorrent to know what the downloaded file is
+       . Type: Type of extract "TV" or "Movie"
+      -->
+    <Folder Category="radarr" Type="Movie">D:\Movies\</Folder>
+    <Folder Category="tv-sonarr" Type="TV">D:\TV Shows\</Folder>
+    <!-- Test -->
+    <Folder Category="movie.test" Type="Movie">E:\_Test\Extract\Movies\</Folder>
+    <Folder Category="tv.test" Type="TV">E:\_Test\Extract\TV\</Folder>
+  </Folders>
+  <FileFormats>
+    <!-- FileFormat: What to do with the files depeding on the extension
+      . Action: Copy / Extract
+      -->
+    <FileFormat Action="Copy">.avi</FileFormat>
+    <FileFormat Action="Copy">.mkv</FileFormat>
+    <FileFormat Action="Copy">.mp4</FileFormat>
+    <FileFormat Action="Extract">.rar</FileFormat>
+    <FileFormat Action="Extract">.zip</FileFormat>
+  </FileFormats>
+  <ExcludedFolders>
+    <!-- Folders you want to ignore -->
+    <ExcludedFolder>Sample</ExcludedFolder>
+    <ExcludedFolder>Proof</ExcludedFolder>
+    <ExcludedFolder>Subs</ExcludedFolder>
+    <ExcludedFolder>Featurettes</ExcludedFolder>
+    <ExcludedFolder>Extras</ExcludedFolder>
+  </ExcludedFolders>
+</Config>

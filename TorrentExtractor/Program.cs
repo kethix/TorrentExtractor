@@ -1,17 +1,76 @@
-﻿using System.Reflection;
-using System;
+﻿using System;
 using System.IO;
-using System.Xml.Serialization;
+using System.Globalization;
 using System.Text.RegularExpressions;
-using Serilog;
+using System.Reflection;
+using System.Xml.Serialization;
 
 namespace TorrentExtractor
 {
     /// <summary>
     /// Main class
     /// </summary>
-    class Program
+    public class Program
     {
+        /// <summary>
+        /// Returns the destination folder
+        /// </summary>
+        /// <param name="sourcePath">Source folder of your downloaded files</param>
+        /// <param name="categorie">Categorie sent by the torrent client</param>
+        /// <returns>Tuple with destination string and a boolean for fixed destination path(1:Add to string, 0:Don't add to string)</returns>
+        private static Tuple<string, bool> GetDestinationPath(string sourcePath, string categorie, Config config)
+        {
+            string destPath = string.Empty;
+            string sourceFolder = new DirectoryInfo(sourcePath).Name.ToLower();
+            TextInfo info = new CultureInfo("en-CA", false).TextInfo;
+            foreach (var folder in config.Folders.Folder)
+            {
+                if (folder.Categorie.Equals(categorie))
+                {
+                    if (folder.Type.ToLower().Equals("tv"))
+                    {
+                        // ".s##e##." or ".s##."
+                        if (new Regex(@"\x2Es\d{2}(e\d{2})?\x2E").IsMatch(sourceFolder))
+                        {
+                            foreach (var word in sourceFolder.Split('.'))
+                            {
+                                if (new Regex(@"s\d{2}(e\d{2})?").IsMatch(word))
+                                    return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(destPath.TrimStart(' ')), string.Concat("Season ", word.Substring(1, 2))), true);
+                                else
+                                    destPath = string.Concat(destPath, " ", word);
+                            }
+                        }
+                        // ".complete."
+                        else if (new Regex(@"\x2Ecomplete\x2E").IsMatch(sourceFolder))
+                        {
+                            foreach (var word in sourceFolder.Split('.'))
+                            {
+                                if (new Regex(@"complete").IsMatch(word))
+                                    return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(destPath.TrimStart(' '))), true);
+                                else
+                                    destPath = string.Concat(destPath, " ", word);
+                            }
+                        }
+                        // Full Season/serie
+                        // " (####) season ## " or " (####) season s## "
+                        else if (new Regex(@"\s\(\d{4}\)\sseason\ss?\d{2}\s").IsMatch(sourceFolder))
+                        {
+                            if (sourceFolder.Contains(" season s"))
+                                return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder.Substring(0, sourceFolder.IndexOf('(')).Trim()), string.Concat("Season ", info.ToTitleCase(sourceFolder.Substring(sourceFolder.LastIndexOf(" season s") + " season s".Length, 2))).Trim()), true);
+                            else
+                                return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder.Substring(0, sourceFolder.IndexOf('(')).Trim()), string.Concat("Season ", info.ToTitleCase(sourceFolder.Substring(sourceFolder.LastIndexOf(" season ") + " season ".Length, 2))).Trim()), true);
+                        }
+                        else
+                            return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder)), true);
+                        break;
+                    }
+                    else
+                        return new Tuple<string, bool>(folder.Path, false);
+                }
+            }
+            throw new Exception("Couldn't generate a destination path.");
+        }
+
         /// <summary>
         /// Return config object from xml file .\Config\Configuration.xml
         /// </summary>
@@ -21,159 +80,38 @@ namespace TorrentExtractor
             XmlSerializer reader = new XmlSerializer(typeof(Config));
             try
             {
-                using (StreamReader xmlfile = new StreamReader(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Config\\Config.xml")))
+                using (StreamReader xmlfile = new StreamReader(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Config.xml")))
                     return (Config)reader.Deserialize(xmlfile);
             }
-            catch (FileNotFoundException)
+            catch (Exception ex)
             {
-                Environment.Exit(2);
+                Environment.Exit(ex.HResult);
             }
-            catch (DirectoryNotFoundException)
-            {
-                Environment.Exit(3);
-            }
-            throw new ArgumentException("Some random error when getting Config.xml file.");
-        }
-
-        /// <summary>
-        /// Start logging file if define in the configuration object
-        /// </summary>
-        /// <param name="config">Configuration</param>
-        private static void StartLogging(Config config)
-        {
-            try
-            {
-                if (config.Logs.LogToFile)
-                    Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.File(config.Logs.File).CreateLogger();
-                else
-                    config.Logs.Level = -1;
-            }
-            catch
-            {
-                Environment.Exit(1);
-            }
-        }
-
-        /// <summary>
-        /// Returns the destination folder
-        /// </summary>
-        /// <param name="config">Configuration</param>
-        /// <param name="sourcePath">Source folder of your downloaded files</param>
-        /// <param name="categorie">Categorie sent by torrent client</param>
-        /// <returns>Destination path</returns>
-        private static string GetDestinationPath(Config config, string sourcePath, string categorie)
-        {
-            Regex regexEpisode = new Regex(@"^S\d{2}(E\d{2})?$");
-            Regex regexSeason = new Regex(@"^S\d{2}$");
-            string destination = string.Empty;
-
-            foreach (Folder folder in config.Extraction.Folders.Folder)
-            {
-                if (folder.Categorie == categorie)
-                {
-                    destination = folder.Path;
-
-                    if (folder.Subfolder)
-                    {
-                        foreach (string splitted in sourcePath.Substring(3).Split('.'))
-                        {
-                            if (regexSeason.IsMatch(splitted) || regexEpisode.IsMatch(splitted))
-                            {
-                                if (folder.Season)
-                                    destination = string.Format("{0}\\Season {1}\\", destination.Substring(0, destination.Length - 1), splitted.Substring(1, 2).TrimStart('0'));
-                                break;
-                            }
-                            else
-                                destination += string.Format("{0} ", splitted);
-                        }
-                    }
-                    try
-                    {
-                        Directory.CreateDirectory(destination);
-                    }
-                    catch(UnauthorizedAccessException)
-                    {
-                        Log.Information("Need more access to create destination path: {0}", destination);
-                        Environment.Exit(5);
-                    }
-                    catch(PathTooLongException)
-                    {
-                        Log.Information("The Path is too long: {0}", destination);
-                        Environment.Exit(111);
-                    }
-                    catch(ArgumentNullException)
-                    {
-                        Log.Information("The Destination path is empty: {0}", destination);
-                        Environment.Exit(160);
-                    }
-                    catch(DirectoryNotFoundException)
-                    {
-                        Log.Information("The Destination path is not valid: {0}", destination);
-                        Environment.Exit(161);
-                    }
-
-                    if (config.Logs.Level > 0)
-                        Log.Information("Destination path: {0}", destination);
-                }
-            }
-            return destination;
+            throw new Exception("Random error when getting Config.xml file.");
         }
 
         /// <summary>
         /// Main
         /// </summary>
-        /// <param name="args">arrays of arguments sent to the application</param>
-        static void Main(string[] args)
+        /// <param name="args">Array of 2 arguments: source, categorie</param>
+        public static void Main(string[] args)
         {
             Config config = GetConfig();
-            StartLogging(config);
 
-            try
-            {
-                if (args.Length != 2)
-                    throw new IndexOutOfRangeException("Number of arguments should be two: \"<Source Path>\" \"<Categorie>\".");
-            }
-            catch (IndexOutOfRangeException ex)
-            {
-                if (config.Logs.Level >= 0)
-                    Log.Error(ex.ToString());
-            }
+            if (args.Length != 2)
+                Environment.Exit(10022);
 
+            //TODO: Add some validations
             string sourcePath = args[0];
             string categorie = args[1];
 
-            if (config.Logs.Level > 0)
-            {
-                Log.Information("Source path: {0}", sourcePath);
-                Log.Information("Categorie: {0}", categorie);
-            }
+            var destination = GetDestinationPath(sourcePath, categorie, config);
 
-            string destination = GetDestinationPath(config, sourcePath, categorie);
-
-            if (string.IsNullOrEmpty(destination))
-            {
-                Log.Information(string.Format("Nothing is configured for that categorie: \"{0}\"", categorie));
+            if (string.IsNullOrEmpty(destination.Item1))
                 Environment.Exit(0);
-            }
-                
+
             // Process
-            if ((File.GetAttributes(sourcePath)).HasFlag(FileAttributes.Directory))
-            {
-                if (config.Logs.Level > 0)
-                    Log.Information("Argument is a folder");
-
-                Extract.FolderExtract(sourcePath, destination, config);
-            }
-            else
-            {
-                if (config.Logs.Level > 0)
-                    Log.Information("Argument is a file");
-
-                Extract.FileExtract(sourcePath, destination, config, string.Empty);
-            }
-
-            if (config.Logs.Level > 0)
-                Log.Information("Job done!");
+            Extract.UniExtract(sourcePath, destination, config);
         }
     }
 }
