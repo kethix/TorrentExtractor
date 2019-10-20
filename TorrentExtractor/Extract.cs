@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 
@@ -26,6 +27,7 @@ namespace TorrentExtractor
                     TakeActionOnFile(file, destination, format.Action);
             }
         }
+
         /// <summary>
         /// Take action on a specific file, either Copy or Extract
         /// </summary>
@@ -34,6 +36,9 @@ namespace TorrentExtractor
         /// <param name="action">Action to do on file</param>
         public static void TakeActionOnFile(string file, string destination, string action)
         {
+            while (IsFileLocked(new FileInfo(file)))
+                Thread.Sleep(2000);
+
             if (action.ToLower() == "copy")
             {
                 if (!Directory.Exists(destination))
@@ -57,6 +62,7 @@ namespace TorrentExtractor
             else
                 throw new Exception("The action format configured in Config.xml is invalid. It should either be \"Copy\" or \"Extract\".");
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -71,6 +77,7 @@ namespace TorrentExtractor
                     TakeActionOnFile(file, destination, format.Action);
             }
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -104,6 +111,32 @@ namespace TorrentExtractor
             else
                 // Source is a file, take action on it
                 TakeActionOnFile(source, destination.Item1, config);
+        }
+
+        /// <summary>
+        /// Check if file is locked
+        /// </summary>
+        /// <param name="file">Info parameter</param>
+        /// <returns></returns>
+        public static bool IsFileLocked(FileInfo file)
+        {
+            FileStream stream = null;
+
+            try
+            {
+                stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None);
+            }
+            catch(IOException)
+            {
+                return true;
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Close();
+            }
+
+            return false;
         }
     }
 }
