@@ -12,6 +12,8 @@ namespace TorrentExtractor
     /// </summary>
     public class Program
     {
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Returns the destination folder
         /// </summary>
@@ -30,7 +32,7 @@ namespace TorrentExtractor
                     if (folder.Type.ToLower().Equals("tv"))
                     {
                         // ".s##e##." or ".s##."
-                        if (new Regex(@"\x2Es\d{2}(e\d{2})?\x2E").IsMatch(sourceFolder))
+                        if (new Regex(@"\x2Es\d{1,2}(e\d{2})?\x2E").IsMatch(sourceFolder))
                         {
                             foreach (var word in sourceFolder.Split('.'))
                             {
@@ -52,13 +54,24 @@ namespace TorrentExtractor
                             }
                         }
                         // Full Season/serie
-                        // " (####) season ## " or " (####) season s## "
-                        else if (new Regex(@"\s\(\d{4}\)\sseason\ss?\d{2}\s").IsMatch(sourceFolder))
+                        // " (####) season ## " or " (####) season s## " or " (####) season ## s## "
+                        else if (new Regex(@"\s\(\d{4}\)\sseason\s(d{1,2}\s)?s?\d{1,2}\s").IsMatch(sourceFolder))
                         {
                             if (sourceFolder.Contains(" season s"))
                                 return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder.Substring(0, sourceFolder.IndexOf('(')).Trim()), string.Concat("Season ", info.ToTitleCase(sourceFolder.Substring(sourceFolder.LastIndexOf(" season s") + " season s".Length, 2))).Trim()), true);
                             else
                                 return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder.Substring(0, sourceFolder.IndexOf('(')).Trim()), string.Concat("Season ", info.ToTitleCase(sourceFolder.Substring(sourceFolder.LastIndexOf(" season ") + " season ".Length, 2))).Trim()), true);
+                        }
+                        // or " s## "
+                        else if (new Regex(@"\ss\d{1,2}\s").IsMatch(sourceFolder))
+                        {
+                            foreach (var word in sourceFolder.Split(' '))
+                            {
+                                if (new Regex(@"s\d{2}").IsMatch(word))
+                                    return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(destPath.TrimStart(' ')), string.Concat("Season ", word.Substring(1, 2))), true);
+                                else
+                                    destPath = string.Concat(destPath, " ", word);
+                            }
                         }
                         else
                             return new Tuple<string, bool>(Path.Combine(folder.Path, info.ToTitleCase(sourceFolder)), true);
@@ -109,6 +122,11 @@ namespace TorrentExtractor
 
             if (string.IsNullOrEmpty(destination.Item1))
                 Environment.Exit(0);
+
+            Logger.Info("*** *** *** *** *** *** *** *** *** *** *** *** *** ***");
+            Logger.Info(sourcePath);
+            Logger.Info(categorie);
+            Logger.Info(destination.Item1);
 
             // Process
             Extract.UniExtract(sourcePath, destination, config);
