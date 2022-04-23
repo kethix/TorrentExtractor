@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentExtractor", "TorrentExtractor\TorrentExtractor.csproj", "{A44B1B11-0797-4808-AFBB-640314459CCE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentExtractor.Test", "TorrentExtractor.Test\TorrentExtractor.Test.csproj", "{4A6548C3-64B4-429E-9624-C215475FED71}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{A44B1B11-0797-4808-AFBB-640314459CCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A44B1B11-0797-4808-AFBB-640314459CCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A44B1B11-0797-4808-AFBB-640314459CCE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4A6548C3-64B4-429E-9624-C215475FED71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A6548C3-64B4-429E-9624-C215475FED71}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A6548C3-64B4-429E-9624-C215475FED71}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A6548C3-64B4-429E-9624-C215475FED71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

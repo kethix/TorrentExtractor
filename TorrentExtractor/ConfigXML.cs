@@ -4,7 +4,7 @@ using System.Xml.Serialization;
 
 namespace TorrentExtractor
 {
-    public class Config
+    public class ConfigXML
     {
         [XmlElement("Folders")]
         public Folders Folders { get; set; }
@@ -19,6 +19,7 @@ namespace TorrentExtractor
         [XmlElement("Folder")]
         public List<Folder> Folder { get; set; }
     }
+
     public class Folder
     {
         [XmlAttribute("Category")]
