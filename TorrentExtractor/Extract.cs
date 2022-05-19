@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Reflection;
 using System.Diagnostics;
 
 namespace TorrentExtractor
@@ -19,22 +20,52 @@ namespace TorrentExtractor
         /// <param name="action">Action to do on file</param>
         public static void TakeActionOnFile(string file, string destination, string action)
         {
-            /*FileInfo f = new FileInfo(file);
-            if (IsFileLocked(f))
-            {
-                Thread.Sleep(20000);
-                if (IsFileLocked(f))
-                    Environment.Exit(0);
-            }*/
+            Program.Logger.Info(string.Concat("                Action taken on file: ", action));
 
             if (action.ToLower() == "copy")
             {
                 if (!Directory.Exists(destination))
                     Directory.CreateDirectory(destination);
-                File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), false);
+
+                string filePath = Path.Combine(destination, Path.GetFileName(file));
+
+                File.Copy(file, filePath, false);
+
+                if (File.Exists(filePath))
+                    Program.Logger.Info("File copied succesfully.");
+                else
+                    Program.Logger.Info("Something weird happened with the copy.");
             }
             else if (action.ToLower() == "extract")
             {
+                string fileextracted = string.Empty;
+
+                bool wasQkilled = false;
+                FileInfo f = new FileInfo(file);
+                for (int i = 1; IsFileLocked(f); i++)
+                {
+                    if (i == 5)
+                    {
+                        Program.Logger.Info(string.Concat("It's been 5 minutes and qBitorrent is not releasing file. Killing it!"));
+                        Process[] ps = Process.GetProcessesByName("qBittorrent");
+                        foreach (Process p in ps)
+                            p.Kill();
+                        wasQkilled = true;
+                        Thread.Sleep(60000);
+                    }
+                    else if (i > 7)
+                    {
+                        Program.Logger.Info(string.Concat("That didn't fix shit, file is still locked...! Restarting qBitorrent... "));
+                        Process.Start("C:\\Program Files\\qBittorrent\\qbittorrent.exe");
+                        Program.Logger.Info(string.Concat("Welp, better luck next time with the extraction..."));
+                        Environment.Exit(9595);
+                    }
+                    else
+                    {
+                        Program.Logger.Info(string.Concat("File is locked, waiting 1 minute."));
+                        Thread.Sleep(60000);
+                    }
+                }
                 try
                 {
                     using (Process exeProcess = new Process())
@@ -43,25 +74,49 @@ namespace TorrentExtractor
                         {
                             CreateNoWindow = false,
                             UseShellExecute = false,
-                            FileName = Path.Combine(Environment.CurrentDirectory, "UnRAR", "UnRAR.exe"),
-                            WorkingDirectory = Path.Combine(Environment.CurrentDirectory, "UnRAR"),
+                            WorkingDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "UnRAR"),
+                            FileName = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "UnRAR", "UnRAR.exe"),
                             WindowStyle = ProcessWindowStyle.Hidden,
-                            Arguments = string.Concat("x -o+ -y \"", file, "\" \"", destination, "\""),
+                            Arguments = string.Concat("lb \"", file, "\" \"", destination, "\""),
                             RedirectStandardOutput = true
                         };
 
                         exeProcess.StartInfo = startInfo;
                         exeProcess.Start();
+                        fileextracted = exeProcess.StandardOutput.ReadToEnd().Trim();
+                        exeProcess.WaitForExit();
 
-                        Program.Logger.Info(exeProcess.StandardOutput.ReadToEnd());
+                        startInfo.Arguments = string.Concat("x -o+ -y \"", file, "\" \"", destination, "\"");
+
+                        Program.Logger.Info(string.Concat("           UnRAR.exe Extracting file: ", fileextracted));
+                        Program.Logger.Debug(string.Concat("           UnRAR.exe Extract command: ", startInfo.FileName, " ", startInfo.Arguments));
+
+                        exeProcess.StartInfo = startInfo;
+                        exeProcess.Start();
+                        
+                        Program.Logger.Debug(exeProcess.StandardOutput.ReadToEnd());
                         
                         exeProcess.WaitForExit();
+
+                        if (File.Exists(Path.Combine(destination, fileextracted)))
+                            Program.Logger.Info("Extraction complete.");
+                        else
+                            Program.Logger.Info("Something weird happened with the extraction.");
                     }
                 }
                 catch(Exception ex)
                 {
                     Program.Logger.Error(string.Concat(ex.HResult, " ", ex.Message));
+                    Program.Logger.Error(string.Concat(ex.HResult, " ", ex.StackTrace));
                     Environment.Exit(ex.HResult);
+                }
+                finally
+                {
+                    if(wasQkilled)
+                    {
+                        Program.Logger.Info(string.Concat("Restarting qBitorrent..."));
+                        Process.Start("C:\\Program Files\\qBittorrent\\qbittorrent.exe");
+                    }
                 }
             }
             else
